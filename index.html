@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Rex Палеонтологический Квест</title>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- AR.js с отслеживанием изображений -->
+    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/3.3.0/aframe/build/aframe-ar.js"></script>
+    
+    <!-- GLTF Loader -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        .arjs-loader {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+        
+        .question-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+            min-width: 300px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            background: #4CAF50;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .option-btn:hover {
+            background: #45a049;
+        }
+        
+        .option-btn.correct {
+            background: #4CAF50;
+        }
+        
+        .option-btn.wrong {
+            background: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <!-- Загрузчик -->
+    <div class="arjs-loader">
+        <div>
+            <h2>T-Rex Палеонтологический Квест</h2>
+            <p>Наведите камеру на маркер музея</p>
+            <p>Разрешите доступ к камере когда браузер попросит</p>
+        </div>
+    </div>
+
+    <!-- AR сцена -->
+    <a-scene 
+        embedded 
+        arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+        renderer="logarithmicDepthBuffer: true;"
+        vr-mode-ui="enabled: false">
+        
+        <!-- Маркер для отслеживания -->
+        <a-marker 
+            type="pattern" 
+            url="assets/markers/pattern-marker.patt"
+            emitevents="true" 
+            cursor="fuse: false; rayOrigin: mouse;"
+            id="marker">
+            
+            <!-- 3D модель T-Rex -->
+            <a-entity 
+                gltf-model="assets/models/trex.glb"
+                scale="0.5 0.5 0.5"
+                position="0 1 0"
+                rotation="0 0 0"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 10000"
+                id="trex-model">
+            </a-entity>
+            
+        </a-marker>
+        
+        <!-- Камера -->
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <!-- Панель с вопросом -->
+    <div id="question-panel" class="question-panel">
+        <h2>Палеонтологический вопрос:</h2>
+        <p><strong>Когда жил Тираннозавр Рекс?</strong></p>
+        <button class="option-btn" onclick="checkAnswer(1)">Юрский период</button>
+        <button class="option-btn" onclick="checkAnswer(2)">Меловой период</button>
+        <div id="feedback" style="margin-top: 20px; font-weight: bold; min-height: 24px;"></div>
+    </div>
+
+    <script>
+        // Скрываем загрузчик когда AR сцена готова
+        document.querySelector('a-scene').addEventListener('loaded', function() {
+            document.querySelector('.arjs-loader').style.display = 'none';
+        });
+
+        // Отслеживаем когда маркер найден
+        const marker = document.querySelector('#marker');
+        
+        marker.addEventListener('markerFound', () => {
+            console.log('Маркер найден!');
+            // Показываем вопрос через 3 секунды
+            setTimeout(() => {
+                document.getElementById('question-panel').style.display = 'block';
+            }, 3000);
+        });
+
+        marker.addEventListener('markerLost', () => {
+            console.log('Маркер потерян');
+            document.getElementById('question-panel').style.display = 'none';
+        });
+
+        // Проверка ответа
+        function checkAnswer(selectedAnswer) {
+            const correctAnswer = 2; // Меловой период
+            const feedback = document.getElementById('feedback');
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            // Блокируем кнопки
+            buttons.forEach(btn => btn.disabled = true);
+            
+            // Подсвечиваем правильный/неправильный ответ
+            buttons[0].classList.add(1 === correctAnswer ? 'correct' : 'wrong');
+            buttons[1].classList.add(2 === correctAnswer ? 'correct' : 'wrong');
+            
+            if (selectedAnswer === correctAnswer) {
+                feedback.innerHTML = '<strong>Правильно!</strong><br>Тираннозавр Рекс жил в Меловом периоде (145-66 млн лет назад)';
+                feedback.style.color = 'green';
+                
+                // Анимация T-Rex при правильном ответе
+                const trex = document.querySelector('#trex-model');
+                trex.setAttribute('animation', 'property: position; to: 0 1.5 0; dur: 1000; dir: alternate; loop: true');
+                
+            } else {
+                feedback.innerHTML = '<strong>Неверно!</strong><br>Тираннозавр жил в Меловом периоде';
+                feedback.style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>
