@@ -193,4 +193,51 @@ a-scene {
     .question-panel p {
         font-size: 16px;
     }
+    .camera-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    z-index: 1001;
+    font-size: 14px;
+}
+
+.camera-indicator.active {
+    background: rgba(76, 175, 80, 0.8);
+}
+
+.camera-indicator.inactive {
+    background: rgba(244, 67, 54, 0.8);
+}
+
+/* Индикатор маркера */
+.marker-indicator {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    z-index: 1001;
+    font-size: 14px;
+}
+
+.marker-indicator.found {
+    background: rgba(76, 175, 80, 0.8);
+}
+
+.marker-indicator.searching {
+    background: rgba(255, 193, 7, 0.8);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
 }
