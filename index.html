@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>T-Rex Палеонтологический Квест</title>
     
@@ -11,82 +11,17 @@
     <!-- AR.js -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-        }
-        
-        .arjs-loader {
-            height: 100%;
-            width: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            text-align: center;
-        }
-        
-        .question-panel {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            z-index: 1000;
-            display: none;
-            min-width: 300px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        
-        .option-btn {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 8px;
-            background: #4CAF50;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        .option-btn:hover {
-            background: #45a049;
-        }
-        
-        .option-btn.correct {
-            background: #4CAF50;
-        }
-        
-        .option-btn.wrong {
-            background: #f44336;
-        }
-        
-        .hidden {
-            display: none;
-        }
-    </style>
+    <!-- Наши стили -->
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <!-- Загрузчик -->
-    <div class="arjs-loader">
-        <div>
+    <div id="loading" class="loading">
+        <div class="loading-content">
             <h2>T-Rex Палеонтологический Квест</h2>
             <p>Наведите камеру на маркер музея</p>
-            <p>Разрешите доступ к камере когда браузер попросит</p>
+            <div id="camera-status">Запрос доступа к камере...</div>
+            <button id="start-camera" class="camera-btn">Разрешить камеру</button>
         </div>
     </div>
 
@@ -96,13 +31,13 @@
         renderer="logarithmicDepthBuffer: true; precision: medium;"
         embedded 
         arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;"
-        id="scene">
+        id="ar-scene">
         
         <!-- Маркер для отслеживания -->
         <a-marker 
             type="pattern" 
             url="assets/markers/pattern-marker.patt"
-            id="marker">
+            id="ar-marker">
             
             <!-- 3D модель T-Rex -->
             <a-entity 
@@ -116,77 +51,22 @@
             
         </a-marker>
         
-        <!-- Статическая камера -->
+        <!-- Камера -->
         <a-entity camera></a-entity>
     </a-scene>
 
     <!-- Панель с вопросом -->
     <div id="question-panel" class="question-panel hidden">
-        <h2>Палеонтологический вопрос:</h2>
-        <p><strong>Когда жил Тираннозавр Рекс?</strong></p>
-        <button class="option-btn" onclick="checkAnswer(1)">Юрский период</button>
-        <button class="option-btn" onclick="checkAnswer(2)">Меловой период</button>
-        <div id="feedback" style="margin-top: 20px; font-weight: bold; min-height: 24px;"></div>
+        <div class="panel-content">
+            <h2>Палеонтологический вопрос:</h2>
+            <p><strong>Когда жил Тираннозавр Рекс?</strong></p>
+            <button class="option-btn" data-answer="1">Юрский период</button>
+            <button class="option-btn" data-answer="2">Меловой период</button>
+            <div id="feedback" class="feedback"></div>
+        </div>
     </div>
 
-    <script>
-        // Скрываем загрузчик когда AR сцена готова
-        document.querySelector('a-scene').addEventListener('loaded', function() {
-            setTimeout(function() {
-                document.querySelector('.arjs-loader').style.display = 'none';
-            }, 1500);
-        });
-
-        // Отслеживаем когда маркер найден
-        const marker = document.querySelector('#marker');
-        const scene = document.querySelector('#scene');
-        
-        marker.addEventListener('markerFound', () => {
-            console.log('Маркер найден!');
-            // Показываем вопрос через 2 секунды
-            setTimeout(() => {
-                document.getElementById('question-panel').classList.remove('hidden');
-            }, 2000);
-        });
-
-        marker.addEventListener('markerLost', () => {
-            console.log('Маркер потерян');
-            document.getElementById('question-panel').classList.add('hidden');
-        });
-
-        // Проверка ответа
-        function checkAnswer(selectedAnswer) {
-            const correctAnswer = 2; // Меловой период
-            const feedback = document.getElementById('feedback');
-            const buttons = document.querySelectorAll('.option-btn');
-            
-            // Блокируем кнопки
-            buttons.forEach(btn => btn.disabled = true);
-            
-            // Подсвечиваем правильный/неправильный ответ
-            buttons[0].classList.add(1 === correctAnswer ? 'correct' : 'wrong');
-            buttons[1].classList.add(2 === correctAnswer ? 'correct' : 'wrong');
-            
-            if (selectedAnswer === correctAnswer) {
-                feedback.innerHTML = '<strong>Правильно!</strong><br>Тираннозавр Рекс жил в Меловом периоде (145-66 млн лет назад)';
-                feedback.style.color = 'green';
-                
-                // Анимация T-Rex при правильном ответе
-                const trex = document.querySelector('#trex-model');
-                trex.setAttribute('animation', 'property: position; to: 0 0.8 0; dur: 800; dir: alternate; loop: true');
-                
-            } else {
-                feedback.innerHTML = '<strong>Неверно!</strong><br>Тираннозавр жил в Меловом периоде';
-                feedback.style.color = 'red';
-            }
-        }
-        
-        // Обработка ошибок
-        scene.addEventListener('error', (e) => {
-            console.error('Ошибка сцены:', e);
-            document.querySelector('.arjs-loader').innerHTML = 
-                '<h2>Ошибка загрузки</h2><p>Проверьте подключение к интернету и попробуйте снова</p>';
-        });
-    </script>
+    <!-- Наши скрипты -->
+    <script src="js/app.js"></script>
 </body>
 </html>
