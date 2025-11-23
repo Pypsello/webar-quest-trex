@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>T-Rex Палеонтологический Квест</title>
     
     <!-- A-Frame -->
@@ -11,37 +11,159 @@
     <!-- AR.js -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
-    <!-- Наши стили -->
-    <link rel="stylesheet" href="css/style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            background: black;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Индикаторы */
+        .status-indicators {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        
+        .indicator {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+        
+        .indicator.active {
+            background: rgba(76, 175, 80, 0.8);
+        }
+        
+        .indicator.inactive {
+            background: rgba(244, 67, 54, 0.8);
+        }
+        
+        .indicator.searching {
+            background: rgba(255, 193, 7, 0.8);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* Загрузчик */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+        
+        .loading-content {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 90%;
+        }
+        
+        .loading h2 {
+            margin-bottom: 15px;
+        }
+        
+        .camera-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+        
+        /* Вопрос */
+        .question-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+            display: none;
+        }
+        
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .feedback {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
 </head>
-<!-- Индикаторы статуса -->
-<div id="camera-indicator" class="camera-indicator inactive">
-    Камера: выкл
-</div>
-
-<div id="marker-indicator" class="marker-indicator searching">
-    Маркер: поиск
-</div>
 <body>
+    <!-- Индикаторы статуса -->
+    <div class="status-indicators">
+        <div id="camera-indicator" class="indicator inactive">Камера: выкл</div>
+        <div id="marker-indicator" class="indicator searching">Маркер: поиск</div>
+    </div>
+
     <!-- Загрузчик -->
     <div id="loading" class="loading">
         <div class="loading-content">
             <h2>T-Rex Палеонтологический Квест</h2>
             <p>Наведите камеру на маркер музея</p>
-            <div id="camera-status">Запрос доступа к камере...</div>
-            <button id="start-camera" class="camera-btn">Разрешить камеру</button>
+            <div id="camera-status">Загрузка AR...</div>
+            <button id="start-camera" class="camera-btn" style="display: none;">Разрешить камеру</button>
         </div>
     </div>
 
     <!-- AR сцена -->
     <a-scene 
         vr-mode-ui="enabled: false"
-        renderer="logarithmicDepthBuffer: true; precision: medium;"
         embedded 
-        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;"
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
         id="ar-scene">
         
-        <!-- Маркер для отслеживания -->
+        <!-- Маркер -->
         <a-marker 
             type="pattern" 
             url="assets/markers/pattern-marker.patt"
@@ -65,16 +187,108 @@
 
     <!-- Панель с вопросом -->
     <div id="question-panel" class="question-panel hidden">
-        <div class="panel-content">
-            <h2>Палеонтологический вопрос:</h2>
-            <p><strong>Когда жил Тираннозавр Рекс?</strong></p>
-            <button class="option-btn" data-answer="1">Юрский период</button>
-            <button class="option-btn" data-answer="2">Меловой период</button>
-            <div id="feedback" class="feedback"></div>
-        </div>
+        <h3>Палеонтологический вопрос:</h3>
+        <p><strong>Когда жил Тираннозавр Рекс?</strong></p>
+        <button class="option-btn" onclick="checkAnswer(1)">Юрский период</button>
+        <button class="option-btn" onclick="checkAnswer(2)">Меловой период</button>
+        <div id="feedback" class="feedback"></div>
     </div>
 
-    <!-- Наши скрипты -->
-    <script src="js/app.js"></script>
+    <script>
+        // Простая логика без сложных классов
+        const scene = document.getElementById('ar-scene');
+        const marker = document.getElementById('ar-marker');
+        const loading = document.getElementById('loading');
+        const questionPanel = document.getElementById('question-panel');
+        const cameraIndicator = document.getElementById('camera-indicator');
+        const markerIndicator = document.getElementById('marker-indicator');
+        const cameraStatus = document.getElementById('camera-status');
+        const startCameraBtn = document.getElementById('start-camera');
+
+        // Проверяем поддержку
+        function checkSupport() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                cameraStatus.textContent = 'Браузер не поддерживает камеру';
+                return false;
+            }
+            return true;
+        }
+
+        // Событие загрузки сцены
+        scene.addEventListener('loaded', function() {
+            console.log('AR сцена загружена');
+            cameraStatus.textContent = 'Камера запускается...';
+            
+            // Прячем загрузчик через 3 секунды
+            setTimeout(() => {
+                loading.classList.add('hidden');
+            }, 3000);
+        });
+
+        // Событие начала рендеринга (камера работает)
+        scene.addEventListener('renderstart', function() {
+            console.log('Камера активна');
+            cameraIndicator.textContent = 'Камера: вкл';
+            cameraIndicator.classList.remove('inactive');
+            cameraIndicator.classList.add('active');
+        });
+
+        // Маркер найден
+        marker.addEventListener('markerFound', function() {
+            console.log('Маркер найден');
+            markerIndicator.textContent = 'Маркер: найден';
+            markerIndicator.classList.remove('searching');
+            markerIndicator.classList.add('active');
+            
+            // Показываем вопрос через 2 секунды
+            setTimeout(() => {
+                questionPanel.style.display = 'block';
+            }, 2000);
+        });
+
+        // Маркер потерян
+        marker.addEventListener('markerLost', function() {
+            console.log('Маркер потерян');
+            markerIndicator.textContent = 'Маркер: поиск';
+            markerIndicator.classList.remove('active');
+            markerIndicator.classList.add('searching');
+            questionPanel.style.display = 'none';
+        });
+
+        // Ошибки
+        scene.addEventListener('error', function(e) {
+            console.error('Ошибка AR:', e);
+            cameraStatus.textContent = 'Ошибка AR. Обновите страницу.';
+            startCameraBtn.style.display = 'block';
+        });
+
+        // Проверка ответа
+        function checkAnswer(answer) {
+            const feedback = document.getElementById('feedback');
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            buttons.forEach(btn => btn.disabled = true);
+            
+            if (answer === 2) {
+                feedback.textContent = 'Правильно! Тираннозавр жил в Меловом периоде';
+                feedback.style.background = '#e8f5e8';
+                feedback.style.color = '#2e7d32';
+            } else {
+                feedback.textContent = 'Неверно! Тираннозавр жил в Меловом периоде';
+                feedback.style.background = '#ffebee';
+                feedback.style.color = '#c62828';
+            }
+        }
+
+        // Проверяем поддержку при загрузке
+        if (!checkSupport()) {
+            cameraStatus.textContent = 'Ваш браузер не поддерживает AR';
+        }
+
+        // Кнопка ручного запуска камеры
+        startCameraBtn.addEventListener('click', function() {
+            location.reload();
+        });
+    </script>
 </body>
 </html>
