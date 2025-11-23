@@ -5,14 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>T-Rex Палеонтологический Квест</title>
     
-    <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- A-Frame -->
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     
-    <!-- AR.js с отслеживанием изображений -->
-    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/3.3.0/aframe/build/aframe-ar.js"></script>
-    
-    <!-- GLTF Loader -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js"></script>
+    <!-- AR.js -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
         body {
@@ -77,6 +74,10 @@
         .option-btn.wrong {
             background: #f44336;
         }
+        
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -91,37 +92,36 @@
 
     <!-- AR сцена -->
     <a-scene 
+        vr-mode-ui="enabled: false"
+        renderer="logarithmicDepthBuffer: true; precision: medium;"
         embedded 
-        arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-        renderer="logarithmicDepthBuffer: true;"
-        vr-mode-ui="enabled: false">
+        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;"
+        id="scene">
         
         <!-- Маркер для отслеживания -->
         <a-marker 
             type="pattern" 
             url="assets/markers/pattern-marker.patt"
-            emitevents="true" 
-            cursor="fuse: false; rayOrigin: mouse;"
             id="marker">
             
             <!-- 3D модель T-Rex -->
             <a-entity 
                 gltf-model="assets/models/trex.glb"
                 scale="0.5 0.5 0.5"
-                position="0 1 0"
-                rotation="0 0 0"
-                animation="property: rotation; to: 0 360 0; loop: true; dur: 10000"
+                position="0 0.5 0"
+                rotation="0 180 0"
+                animation="property: rotation; to: 0 540 0; loop: true; dur: 15000"
                 id="trex-model">
             </a-entity>
             
         </a-marker>
         
-        <!-- Камера -->
+        <!-- Статическая камера -->
         <a-entity camera></a-entity>
     </a-scene>
 
     <!-- Панель с вопросом -->
-    <div id="question-panel" class="question-panel">
+    <div id="question-panel" class="question-panel hidden">
         <h2>Палеонтологический вопрос:</h2>
         <p><strong>Когда жил Тираннозавр Рекс?</strong></p>
         <button class="option-btn" onclick="checkAnswer(1)">Юрский период</button>
@@ -132,23 +132,26 @@
     <script>
         // Скрываем загрузчик когда AR сцена готова
         document.querySelector('a-scene').addEventListener('loaded', function() {
-            document.querySelector('.arjs-loader').style.display = 'none';
+            setTimeout(function() {
+                document.querySelector('.arjs-loader').style.display = 'none';
+            }, 1500);
         });
 
         // Отслеживаем когда маркер найден
         const marker = document.querySelector('#marker');
+        const scene = document.querySelector('#scene');
         
         marker.addEventListener('markerFound', () => {
             console.log('Маркер найден!');
-            // Показываем вопрос через 3 секунды
+            // Показываем вопрос через 2 секунды
             setTimeout(() => {
-                document.getElementById('question-panel').style.display = 'block';
-            }, 3000);
+                document.getElementById('question-panel').classList.remove('hidden');
+            }, 2000);
         });
 
         marker.addEventListener('markerLost', () => {
             console.log('Маркер потерян');
-            document.getElementById('question-panel').style.display = 'none';
+            document.getElementById('question-panel').classList.add('hidden');
         });
 
         // Проверка ответа
@@ -170,13 +173,20 @@
                 
                 // Анимация T-Rex при правильном ответе
                 const trex = document.querySelector('#trex-model');
-                trex.setAttribute('animation', 'property: position; to: 0 1.5 0; dur: 1000; dir: alternate; loop: true');
+                trex.setAttribute('animation', 'property: position; to: 0 0.8 0; dur: 800; dir: alternate; loop: true');
                 
             } else {
                 feedback.innerHTML = '<strong>Неверно!</strong><br>Тираннозавр жил в Меловом периоде';
                 feedback.style.color = 'red';
             }
         }
+        
+        // Обработка ошибок
+        scene.addEventListener('error', (e) => {
+            console.error('Ошибка сцены:', e);
+            document.querySelector('.arjs-loader').innerHTML = 
+                '<h2>Ошибка загрузки</h2><p>Проверьте подключение к интернету и попробуйте снова</p>';
+        });
     </script>
 </body>
 </html>
